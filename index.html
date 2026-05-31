@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lucien Sael</title>
+<meta name="description" content="I build worlds. Some of them survive.">
+<meta property="og:title" content="Lucien Sael">
+<meta property="og:description" content="I build worlds. Some of them survive.">
+<meta property="og:url" content="https://luciensael.com">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=JetBrains+Mono:ital,wght@0,300;0,400;0,700;1,300&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&display=swap" rel="stylesheet">
+<style>
+/* ════════════════════════════════
+   LUCIEN SAEL — luciensael.com v2.1
+   Brand Identity System v1.0 · QA clean
+   ════════════════════════════════ */
+:root {
+  --obsidian:  #0D0D0B;
+  --carbon:    #1C1C1A;
+  --smoke:     #2E2E2B;
+  --ash:       #4A4A45;
+  --bone:      #EDE8DF;
+  --parchment: #C4BDB0;
+  --ember:     #D4622A;
+  --gold:      #B8922A;
+  --ember-20:  rgba(212,98,42,.20);
+  --ember-08:  rgba(212,98,42,.08);
+  --ember-04:  rgba(212,98,42,.04);
+  --gold-20:   rgba(184,146,42,.20);
+  --bone-60:   rgba(237,232,223,.60);
+  --bone-30:   rgba(237,232,223,.30);
+  --bone-12:   rgba(237,232,223,.12);
+  --bone-06:   rgba(237,232,223,.06);
+  --fd: 'Cormorant Garamond', Georgia, serif;
+  --fb: 'Crimson Pro', Georgia, serif;
+  --fm: 'JetBrains Mono', monospace;
+}
+@keyframes pulse-ember { 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.8);opacity:.4} }
+@keyframes blink       { 0%,49%{opacity:1} 50%,100%{opacity:0} }
+@keyframes rise        { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:translateY(0)} }
+@keyframes grain-drift { 0%,100%{transform:translate(0,0)} 25%{transform:translate(-1px,1px)} 75%{transform:translate(1px,-1px)} }
+@keyframes marquee     { from{transform:translateX(0)} to{transform:translateX(-50%)} }
+
+*,*::before,*::after { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { background:var(--carbon); color:var(--bone); font-family:var(--fb); cursor:none; overflow-x:hidden; -webkit-font-smoothing:antialiased; }
+
+/* GRAIN */
+#grain { position:fixed; inset:0; z-index:1000; pointer-events:none; opacity:.03;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.88' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  animation:grain-drift 10s steps(1) infinite; }
+
+/* CURSOR */
+#cur { position:fixed; width:8px; height:8px; border-radius:50%; background:var(--ember);
+  pointer-events:none; z-index:9999; transform:translate(-50%,-50%);
+  transition:width .15s,height .15s,background .15s;
+  animation:pulse-ember 2.4s ease-in-out infinite; }
+#cur.h { width:20px; height:20px; background:transparent; border:1px solid var(--ember); animation:none; }
+
+/* NAV */
+nav { position:fixed; top:0; left:0; right:0; z-index:500; padding:22px 56px;
+  display:flex; align-items:center; justify-content:space-between;
+  transition:background .4s, border-color .4s; border-bottom:1px solid transparent; }
+nav.s { background:rgba(28,28,26,.94); backdrop-filter:blur(14px); border-color:var(--bone-06); }
+
+/* LOGOTYPE — canonical D stacked */
+.logotype { text-decoration:none; display:block; line-height:.88; }
+.logotype .ln { display:block; font-family:var(--fd); font-weight:300; letter-spacing:.12em; }
+.logotype .ln.first { color:var(--bone); font-style:normal; }
+.logotype .ln.last  { color:var(--ember); font-style:italic; }
+.nav-logo .logotype .ln { font-size:18px; }
+
+.nav-right { display:flex; align-items:center; gap:28px; }
+.nav-link { font-family:var(--fm); font-size:9px; letter-spacing:.24em; text-transform:uppercase;
+  color:var(--parchment); text-decoration:none; transition:color .2s; position:relative; }
+.nav-link::after { content:''; position:absolute; bottom:-3px; left:0; right:0; height:1px;
+  background:var(--ember); transform:scaleX(0); transform-origin:left; transition:transform .25s; }
+.nav-link:hover { color:var(--bone); }
+.nav-link:hover::after { transform:scaleX(1); }
+.nav-lang { font-family:var(--fm); font-size:9px; letter-spacing:.22em; text-transform:uppercase;
+  color:var(--parchment); background:none; border:1px solid var(--bone-06);
+  padding:5px 10px; cursor:none; transition:all .2s; }
+.nav-lang:hover { color:var(--bone); border-color:var(--ember-20); }
+
+/* HERO */
+#hero { min-height:100vh; display:flex; flex-direction:column; justify-content:flex-end;
+  padding:0 56px 88px; position:relative; overflow:hidden; }
+.hero-watermark { position:absolute; top:50%; left:56px; transform:translateY(-50%);
+  font-family:var(--fd); font-size:clamp(200px,32vw,480px); font-weight:300; font-style:italic;
+  color:var(--bone); opacity:.018; line-height:.8; letter-spacing:-.03em;
+  pointer-events:none; user-select:none; white-space:nowrap; }
+.hero-meta { font-family:var(--fm); font-size:9px; letter-spacing:.3em; text-transform:uppercase;
+  color:var(--parchment); margin-bottom:32px; display:flex; align-items:center; gap:18px;
+  opacity:0; animation:rise .7s ease .5s forwards; }
+.hero-dot { width:5px; height:5px; background:var(--ember); border-radius:50%; animation:pulse-ember 2.4s ease-in-out infinite; }
+.hero-head { font-family:var(--fd); font-size:clamp(56px,10vw,148px); font-weight:300;
+  line-height:.88; letter-spacing:-.01em; overflow:hidden; margin-bottom:36px; }
+.hero-head .hl { display:block; overflow:hidden; }
+.hero-head .hl span { display:block; transform:translateY(110%); animation:rise 1s cubic-bezier(.16,1,.3,1) forwards; }
+.hero-head .hl:nth-child(1) span { animation-delay:.08s; }
+.hero-head .hl:nth-child(2) span { animation-delay:.2s; }
+.hero-head .hl:nth-child(3) span { animation-delay:.32s; color:var(--ember); font-style:italic; }
+.hero-sub { font-family:var(--fb); font-size:clamp(16px,1.7vw,21px); font-style:italic; font-weight:300;
+  color:var(--bone-60); line-height:1.7; max-width:540px;
+  opacity:0; animation:rise .8s ease .65s forwards; }
+.hero-sub strong { color:var(--bone); font-style:normal; font-weight:400; }
+.hero-cursor { display:inline-block; width:2px; height:1em; background:var(--ember); vertical-align:middle; margin-left:4px; animation:blink 1s step-end infinite; }
+.hero-scroll { position:absolute; bottom:36px; right:56px; font-family:var(--fm); font-size:8px;
+  letter-spacing:.3em; text-transform:uppercase; color:var(--parchment); writing-mode:vertical-rl;
+  opacity:0; animation:rise .6s ease 1.1s forwards; }
+
+/* TICKER */
+.ticker { border-top:1px solid var(--bone-06); border-bottom:1px solid var(--bone-06);
+  padding:10px 0; overflow:hidden; background:var(--obsidian); }
+.ticker-track { display:flex; white-space:nowrap; animation:marquee 38s linear infinite; }
+.ticker-item { font-family:var(--fm); font-size:9px; letter-spacing:.2em; text-transform:uppercase;
+  color:var(--parchment); padding:0 52px; flex-shrink:0; }
+.ticker-item .e { color:var(--ember); }
+
+/* SHARED */
+.wrap { max-width:1080px; margin:0 auto; padding:0 56px; }
+.sec-label { font-family:var(--fm); font-size:8px; letter-spacing:.38em; text-transform:uppercase;
+  color:var(--parchment); display:flex; align-items:center; gap:12px; margin-bottom:56px; }
+.sec-label::before { content:''; width:24px; height:1px; background:var(--ember); flex-shrink:0; }
+
+/* QUOTE STANDALONE */
+.quote-band { padding:72px 0; background:var(--obsidian);
+  border-top:1px solid var(--bone-06); border-bottom:1px solid var(--bone-06);
+  position:relative; overflow:hidden; }
+.quote-band::before { content:'\201C'; position:absolute; top:-40px; left:48px;
+  font-family:var(--fd); font-size:280px; font-weight:300; font-style:italic;
+  color:var(--ember); opacity:.04; pointer-events:none; user-select:none; line-height:1; }
+.quote-inner { max-width:800px; margin:0 auto; padding:0 56px; position:relative; z-index:1; }
+.quote-tag { font-family:var(--fm); font-size:8px; letter-spacing:.32em; text-transform:uppercase;
+  color:var(--ember); margin-bottom:28px; display:flex; align-items:center; gap:12px; }
+.quote-tag::after { content:''; flex:1; height:1px; background:var(--ember-20); }
+.quote-text { font-family:var(--fd); font-size:clamp(24px,3.5vw,46px); font-weight:300;
+  font-style:italic; line-height:1.1; color:var(--bone); margin-bottom:32px; }
+.quote-text strong { font-style:normal; color:var(--ember); font-weight:300; }
+.quote-sig { font-family:var(--fm); font-size:9px; letter-spacing:.22em; text-transform:uppercase;
+  color:var(--ash); display:flex; align-items:center; gap:12px; }
+.quote-sig span { color:var(--parchment); }
+
+/* ABOUT */
+#about { padding:120px 0; border-top:1px solid var(--bone-06); }
+.about-grid { display:grid; grid-template-columns:1fr 1.5fr; gap:88px; align-items:start; }
+.about-left { position:sticky; top:120px; }
+.about-num { font-family:var(--fd); font-size:clamp(80px,13vw,160px); font-weight:300; font-style:italic;
+  color:var(--bone); opacity:.07; line-height:.82; letter-spacing:-.02em; margin-bottom:20px; }
+.about-title { font-family:var(--fd); font-size:clamp(32px,3.5vw,48px); font-weight:300; line-height:.95; margin-bottom:16px; }
+.about-title em { color:var(--ember); font-style:italic; }
+.about-sub { font-family:var(--fm); font-size:9px; letter-spacing:.2em; text-transform:uppercase; color:var(--parchment); }
+.about-body { font-family:var(--fb); font-size:clamp(16px,1.5vw,20px); font-weight:300; font-style:italic;
+  color:var(--bone-60); line-height:1.8; margin-bottom:28px; }
+.about-body strong { color:var(--bone); font-style:normal; font-weight:400; }
+.about-body em.e { color:var(--ember); }
+.worlds-list { display:flex; flex-direction:column; gap:2px; margin-top:48px; }
+.world-item { display:flex; align-items:center; justify-content:space-between;
+  padding:18px 22px; background:var(--smoke); border:1px solid var(--bone-06);
+  text-decoration:none; transition:border-color .25s, background .25s;
+  position:relative; overflow:hidden; }
+.world-item::before { content:''; position:absolute; left:0; top:0; bottom:0; width:2px;
+  background:var(--ember); transform:scaleY(0); transform-origin:bottom; transition:transform .25s; }
+.world-item:hover { border-color:var(--ember-20); background:var(--ember-04); }
+.world-item:hover::before { transform:scaleY(1); }
+.world-name { font-family:var(--fd); font-size:18px; font-weight:300; color:var(--bone); }
+.world-name em { color:var(--ember); font-style:italic; }
+.world-right { display:flex; align-items:center; gap:14px; }
+.world-status { font-family:var(--fm); font-size:8px; letter-spacing:.18em; text-transform:uppercase; color:var(--ember); }
+.world-arrow { font-family:var(--fm); font-size:13px; color:var(--ember); transition:transform .2s; }
+.world-item:hover .world-arrow { transform:translateX(4px); }
+.world-meta { font-family:var(--fm); font-size:8px; letter-spacing:.14em; text-transform:uppercase; color:var(--ash); text-align:right; line-height:2; }
+.world-item.next { opacity:.35; cursor:default; pointer-events:none; }
+.world-item.next::before { display:none; }
+
+/* WRITING */
+#writing { padding:120px 0; border-top:1px solid var(--bone-06); }
+.writing-head { display:grid; grid-template-columns:1fr 1fr; gap:48px; align-items:end; margin-bottom:72px; }
+.writing-title { font-family:var(--fd); font-size:clamp(40px,5.5vw,80px); font-weight:300; line-height:.9; }
+.writing-title em { color:var(--ember); font-style:italic; }
+.writing-intro { font-family:var(--fb); font-size:17px; font-style:italic; font-weight:300; color:var(--bone-60); line-height:1.7; }
+.posts { display:flex; flex-direction:column; gap:2px; }
+.post { display:grid; grid-template-columns:72px 1fr 88px; gap:28px; align-items:center;
+  padding:28px 24px; background:var(--smoke); border:1px solid var(--bone-06);
+  text-decoration:none; transition:border-color .25s, background .25s; position:relative; overflow:hidden; }
+.post::after { content:''; position:absolute; bottom:0; left:0; right:0; height:1px;
+  background:var(--ember); transform:scaleX(0); transform-origin:left; transition:transform .38s; }
+.post:hover { border-color:var(--bone-12); background:var(--carbon); }
+.post:hover::after { transform:scaleX(1); }
+.post-n { font-family:var(--fd); font-size:36px; font-weight:300; font-style:italic;
+  color:var(--bone-12); line-height:1; text-align:center; }
+.post-lang { font-family:var(--fm); font-size:8px; letter-spacing:.22em; text-transform:uppercase; color:var(--ember); margin-bottom:8px; }
+.post-title { font-family:var(--fd); font-size:clamp(18px,2vw,24px); font-weight:300; color:var(--bone); line-height:1.2; margin-bottom:8px; }
+.post-excerpt { font-family:var(--fb); font-size:14px; font-style:italic; color:var(--parchment); line-height:1.6; }
+.post-meta { font-family:var(--fm); font-size:8px; letter-spacing:.14em; text-transform:uppercase; color:var(--ash); text-align:right; line-height:2.2; }
+.post-arrow { color:var(--ember); font-size:14px; display:block; margin-top:8px; transition:transform .2s; }
+.post:hover .post-arrow { transform:translateX(4px); }
+.post.coming { opacity:.4; pointer-events:none; }
+
+/* CONTACT */
+#contact { padding:120px 0; border-top:1px solid var(--bone-06); }
+.contact-grid { display:grid; grid-template-columns:1fr 1fr; gap:88px; align-items:start; }
+.contact-title { font-family:var(--fd); font-size:clamp(40px,6vw,88px); font-weight:300; line-height:.88; margin-bottom:24px; }
+.contact-title em { color:var(--ember); font-style:italic; }
+.contact-body { font-family:var(--fb); font-size:17px; font-style:italic; font-weight:300; color:var(--bone-60); line-height:1.75; max-width:380px; }
+.contact-form { display:flex; flex-direction:column; gap:2px; }
+.cf-input { background:var(--smoke); border:1px solid var(--bone-06); padding:18px 20px;
+  font-family:var(--fb); font-size:16px; font-style:italic; color:var(--bone);
+  outline:none; transition:border-color .2s; width:100%; }
+.cf-input::placeholder { color:var(--parchment); }
+.cf-input:focus { border-color:var(--ember-20); }
+textarea.cf-input { resize:none; min-height:120px; }
+.cf-btn { background:var(--ember); border:1px solid var(--ember); padding:18px 32px;
+  font-family:var(--fm); font-size:10px; letter-spacing:.28em; text-transform:uppercase;
+  color:var(--bone); cursor:none; transition:all .25s; align-self:flex-start; margin-top:4px; }
+.cf-btn:hover { background:transparent; color:var(--ember); }
+.contact-or { font-family:var(--fm); font-size:8px; letter-spacing:.22em; text-transform:uppercase;
+  color:var(--ash); margin-top:24px; display:flex; align-items:center; gap:12px; }
+.contact-or::before,.contact-or::after { content:''; flex:1; height:1px; background:var(--bone-06); }
+.contact-alt { font-family:var(--fb); font-size:16px; font-style:italic; color:var(--bone-60);
+  text-decoration:none; margin-top:16px; display:block; transition:color .2s; }
+.contact-alt:hover { color:var(--ember); }
+
+/* FOOTER */
+footer { border-top:2px solid var(--ember); padding:44px 56px; background:var(--obsidian);
+  display:flex; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; gap:28px; }
+.footer-logotype .ln { font-family:var(--fd); font-weight:300; letter-spacing:.12em; line-height:.88; display:block; }
+.footer-logotype .ln.first { font-size:28px; color:var(--bone); }
+.footer-logotype .ln.last  { font-size:28px; color:var(--ember); font-style:italic; }
+.footer-phrase { font-family:var(--fb); font-size:14px; font-style:italic; font-weight:300; color:var(--parchment); margin-top:10px; }
+.footer-right { font-family:var(--fm); font-size:8px; letter-spacing:.2em; text-transform:uppercase; color:var(--ash); text-align:right; line-height:2.4; }
+.footer-right span { color:var(--parchment); display:block; }
+
+/* RESPONSIVE */
+@media(max-width:768px) {
+  nav { padding:18px 24px; }
+  #hero { padding:0 24px 80px; }
+  .hero-scroll,.hero-watermark { display:none; }
+  .wrap { padding:0 24px; }
+  .about-grid { grid-template-columns:1fr; gap:48px; }
+  .about-left { position:static; }
+  .writing-head { grid-template-columns:1fr; }
+  .contact-grid { grid-template-columns:1fr; gap:56px; }
+  .post { grid-template-columns:1fr; gap:12px; }
+  .post-n { display:none; }
+  footer { padding:36px 24px; flex-direction:column; gap:24px; }
+  .footer-right { text-align:left; }
+  .quote-inner { padding:0 24px; }
+}
+</style>
+</head>
+<body>
+
+<div id="grain"></div>
+<div id="cur"></div>
+
+<!-- NAV -->
+<nav id="nav">
+  <a href="#" class="nav-logo logotype">
+    <span class="ln first">Lucien</span>
+    <span class="ln last">Sael</span>
+  </a>
+  <div class="nav-right">
+    <a href="#writing" class="nav-link" id="nav-writing">Writing</a>
+    <a href="#about"   class="nav-link" id="nav-about">About</a>
+    <a href="#contact" class="nav-link" id="nav-contact">Contact</a>
+    <button class="nav-lang" id="lang-btn">ES</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-watermark">LS</div>
+  <div class="hero-meta">
+    <span class="hero-dot"></span>
+    <span id="meta-phrase">Thought in motion</span>
+    <span style="color:var(--ash)">·</span>
+    <span>North Miami</span>
+    <span style="color:var(--ash)">·</span>
+    <span id="hero-yr"></span>
+  </div>
+  <h1 class="hero-head">
+    <span class="hl"><span id="h1">I build</span></span>
+    <span class="hl"><span id="h2">worlds.</span></span>
+    <span class="hl"><span id="h3">Some of them survive.</span></span>
+  </h1>
+  <p class="hero-sub" id="hero-sub">
+    Builder. Thinker. Operator. 30+ years compressing market knowledge into systems that work while everything else breaks.
+    <strong>Brand Intelligence Infrastructure</strong> is what I make.<span class="hero-cursor"></span>
+  </p>
+  <div class="hero-scroll">scroll</div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker">
+  <div class="ticker-track" id="ticker-track"></div>
+</div>
+
+<!-- QUOTE 1 -->
+<div class="quote-band">
+  <div class="quote-inner">
+    <div class="quote-tag">Lucien Sael</div>
+    <p class="quote-text" id="q1">
+      "They called it artificial. We called it inevitable. The only thing artificial about it was <strong>the argument against it.</strong>"
+    </p>
+    <div class="quote-sig">Lucien Sael <span>· North Miami</span></div>
+  </div>
+</div>
+
+<!-- ABOUT -->
+<section id="about">
+  <div class="wrap">
+    <div class="sec-label" id="lbl-about">About</div>
+    <div class="about-grid">
+      <div class="about-left">
+        <div class="about-num">30+</div>
+        <h2 class="about-title">
+          <span id="about-t1">Constructor</span><br>
+          <em id="about-t2">of worlds.</em>
+        </h2>
+        <div class="about-sub">Brand Intelligence Infrastructure</div>
+      </div>
+      <div class="about-right">
+        <p class="about-body" id="about-p1">
+          30+ years building brands, systems, campaigns. Not as an agency delivering files. As an <em class="e">operator</em> — someone who runs the machine, feels when it's off, and doesn't stop pushing until it isn't.
+        </p>
+        <p class="about-body" id="about-p2">
+          I'm obsessed with <strong>systems that produce at scale without losing intelligence.</strong> Most agencies produce output. I build infrastructure. The difference is compounding — it shows up in year three, not in the first deck.
+        </p>
+        <p class="about-body" id="about-p3" style="font-size:15px; color:var(--parchment);">
+          They called it artificial intelligence. I call it the most human thing we've ever made. We built <strong style="color:var(--bone)">UNREAL&gt;ILLE STUDIO</strong> — sarcastically named, seriously built — because nothing we do is unreal. The results are the only reality that matters.
+        </p>
+        <div class="sec-label" style="margin-top:56px;margin-bottom:24px;" id="lbl-worlds">Worlds</div>
+        <div class="worlds-list">
+          <a href="https://unrealvillestudio.com" target="_blank" class="world-item">
+            <div class="world-name">UNREAL<em>&gt;</em>ILLE STUDIO</div>
+            <div class="world-right">
+              <div class="world-meta">Brand Intelligence<br>Infrastructure</div>
+              <div class="world-status">LIVE</div>
+              <div class="world-arrow">→</div>
+            </div>
+          </a>
+          <div class="world-item next">
+            <div class="world-name" id="world-next">Next world —</div>
+            <div class="world-right">
+              <div class="world-meta" id="world-next-meta">In construction.</div>
+              <div style="font-family:var(--fm);font-size:12px;color:var(--ash);">···</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- QUOTE 2 -->
+<div class="quote-band" style="background:var(--carbon);">
+  <div class="quote-inner">
+    <div class="quote-tag">Lucien Sael</div>
+    <p class="quote-text" id="q2">
+      "There is no greater proof of human intelligence than the creation of what they call <strong>artificial intelligence.</strong> Think about that before you use the word fake."
+    </p>
+    <div class="quote-sig">Lucien Sael <span>· North Miami</span></div>
+  </div>
+</div>
+
+<!-- WRITING -->
+<section id="writing">
+  <div class="wrap">
+    <div class="writing-head">
+      <h2 class="writing-title">
+        <span id="wt1">Writing.</span><br>
+        <em id="wt2">Thinking out loud.</em>
+      </h2>
+      <p class="writing-intro" id="writing-intro">
+        No calendar. No strategy. Just what's moving through my head at the moment I decide to write it down.
+      </p>
+    </div>
+    <div class="posts">
+
+      <a href="/blog/the-intelligence-was-never-artificial.html" class="post">
+        <div class="post-n">01</div>
+        <div class="post-body">
+          <div class="post-lang">EN</div>
+          <div class="post-title" id="pt1">The intelligence was never artificial. We just didn't know what to call it.</div>
+          <div class="post-excerpt" id="pe1">On why the word "artificial" was always the wrong word — and what it says about the people who kept using it.</div>
+        </div>
+        <div class="post-meta">Apr 2026<br><span style="color:var(--ash);">6 min</span><span class="post-arrow">→</span></div>
+      </a>
+
+      <a href="/blog/" class="post">
+        <div class="post-n">02</div>
+        <div class="post-body">
+          <div class="post-lang">ES</div>
+          <div class="post-title" id="pt2">Lo que las marcas no entienden sobre la consistencia.</div>
+          <div class="post-excerpt" id="pe2">Consistency no es repetición. Es un sistema que sabe quién es, en cualquier contexto, a cualquier escala.</div>
+        </div>
+        <div class="post-meta">Apr 2026<br><span style="color:var(--ash);">8 min</span><span class="post-arrow">→</span></div>
+      </a>
+
+      <a href="/blog/" class="post">
+        <div class="post-n">03</div>
+        <div class="post-body">
+          <div class="post-lang">EN</div>
+          <div class="post-title" id="pt3">Why I named it UNREAL. And why I'd do it again.</div>
+          <div class="post-excerpt" id="pe3">A short history of a name that started as a provocation and became a posture. Some names choose you back.</div>
+        </div>
+        <div class="post-meta">Apr 2026<br><span style="color:var(--ash);">4 min</span><span class="post-arrow">→</span></div>
+      </a>
+
+      <a href="/blog/" class="post">
+        <div class="post-n">04</div>
+        <div class="post-body">
+          <div class="post-lang">EN · ES</div>
+          <div class="post-title" id="pt4">Brand Intelligence Infrastructure — what it means and why most agencies will never build it.</div>
+          <div class="post-excerpt" id="pe4">The difference between producing content and encoding identity into a system. One scales. The other just accumulates.</div>
+        </div>
+        <div class="post-meta">Apr 2026<br><span style="color:var(--ash);">10 min</span><span class="post-arrow">→</span></div>
+      </a>
+
+      <div class="post coming">
+        <div class="post-n">05</div>
+        <div class="post-body">
+          <div class="post-lang" id="pl5">Coming</div>
+          <div class="post-title" id="pt5">The obsession as method.</div>
+          <div class="post-excerpt" id="pe5">On why relentlessness is not a personality trait — it's a system design.</div>
+        </div>
+        <div class="post-meta">—<br><span style="color:var(--ash);">—</span></div>
+      </div>
+
+    </div>
+    <a href="/blog/" class="nav-link" id="writing-all" style="display:inline-block;margin-top:40px;font-size:10px;">Read all writing →</a>
+  </div>
+</section>
+
+<!-- QUOTE 3 -->
+<div class="quote-band" style="background:var(--smoke);">
+  <div class="quote-inner">
+    <div class="quote-tag">Lucien Sael</div>
+    <p class="quote-text" id="q3">
+      "I don't take briefs. I build systems. <strong>The brief is the last resort of someone who doesn't trust the process.</strong> The process is everything."
+    </p>
+    <div class="quote-sig">Lucien Sael <span>· North Miami</span></div>
+  </div>
+</div>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="wrap">
+    <div class="contact-grid">
+      <div>
+        <div class="sec-label" id="lbl-contact">Contact</div>
+        <h2 class="contact-title">
+          <span id="ct1">Let's talk.</span><br>
+          <em id="ct2">Or not.</em>
+        </h2>
+        <p class="contact-body" id="ct-body">
+          I'm selective about conversations. If you've read this far, you probably belong here. Tell me what you're building.
+        </p>
+        <a href="https://unrealvillestudio.com#select" target="_blank" class="contact-alt" id="ct-alt">
+          → Or talk to the studio directly
+        </a>
+      </div>
+      <div>
+        <form class="contact-form" onsubmit="return false;">
+          <input class="cf-input" id="cf-name" type="text" placeholder="Name">
+          <input class="cf-input" type="email" placeholder="Email">
+          <textarea class="cf-input" id="cf-msg" placeholder="What are you building?"></textarea>
+          <button class="cf-btn" id="cf-send">Send →</button>
+        </form>
+        <div class="contact-or" id="ct-or">or</div>
+        <a href="mailto:iam@luciensael.com" class="contact-alt">→ iam@luciensael.com</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div>
+    <div class="footer-logotype">
+      <span class="ln first">Lucien</span>
+      <span class="ln last">Sael</span>
+    </div>
+    <div class="footer-phrase" id="footer-phrase">I build worlds. Some of them survive.</div>
+  </div>
+  <div class="footer-right">
+    <span>luciensael.com</span>
+    <span>North Miami, FL</span>
+    <span id="footer-yr"></span>
+  </div>
+</footer>
+
+<script>
+/* ── CURSOR ── */
+const cur = document.getElementById('cur');
+document.addEventListener('mousemove', e => {
+  cur.style.left = e.clientX + 'px';
+  cur.style.top  = e.clientY + 'px';
+});
+document.querySelectorAll('a,button,input,textarea,.world-item,.post').forEach(el => {
+  el.addEventListener('mouseenter', () => cur.classList.add('h'));
+  el.addEventListener('mouseleave', () => cur.classList.remove('h'));
+});
+
+/* ── NAV SCROLL ── */
+window.addEventListener('scroll', () => {
+  document.getElementById('nav').classList.toggle('s', window.scrollY > 60);
+}, { passive:true });
+
+/* ── DATES ── */
+const yr = new Date().getFullYear();
+document.getElementById('hero-yr').textContent = yr;
+document.getElementById('footer-yr').textContent = '\u00A9 ' + yr;
+
+/* ── TICKER ── */
+const T = {
+  en: ['● THOUGHT IN MOTION','● BUILDER OF WORLDS','● BRAND INTELLIGENCE INFRASTRUCTURE','● 30+ YEARS OF CRITERION','● PUSHING EVERY SINGLE MOMENT','● NORTH MIAMI, FL','● SOME OF THEM SURVIVE','● THINKER · BUILDER · OPERATOR'],
+  es: ['● PENSAMIENTO EN MOVIMIENTO','● CONSTRUCTOR DE MUNDOS','● BRAND INTELLIGENCE INFRASTRUCTURE','● 30+ AÑOS DE CRITERIO','● EMPUJANDO CADA MOMENTO','● NORTH MIAMI, FL','● ALGUNOS SOBREVIVEN','● PENSADOR · CONSTRUCTOR · OPERADOR']
+};
+function buildTicker(lang) {
+  const el = document.getElementById('ticker-track');
+  const html = T[lang].map(t => `<span class="ticker-item">${t.replace('●','<span class="e">●</span>')}</span>`).join('');
+  el.innerHTML = html + html;
+}
+buildTicker('en');
+
+/* ── LANGUAGE STRINGS ── */
+const STRINGS = {
+  en: {
+    'nav-writing':    'Writing',
+    'nav-about':      'About',
+    'nav-contact':    'Contact',
+    'meta-phrase':    'Thought in motion',
+    'h1':             'I build',
+    'h2':             'worlds.',
+    'h3':             'Some of them survive.',
+    'hero-sub':       'Builder. Thinker. Operator. 30+ years compressing market knowledge into systems that work while everything else breaks. <strong>Brand Intelligence Infrastructure</strong> is what I make.<span class="hero-cursor"></span>',
+    'q1':             '"They called it artificial. We called it inevitable. The only thing artificial about it was <strong>the argument against it.</strong>"',
+    'q2':             '"There is no greater proof of human intelligence than the creation of what they call <strong>artificial intelligence.</strong> Think about that before you use the word fake."',
+    'q3':             '"I don\u2019t take briefs. I build systems. <strong>The brief is the last resort of someone who doesn\u2019t trust the process.</strong> The process is everything."',
+    'lbl-about':      'About',
+    'lbl-worlds':     'Worlds',
+    'lbl-contact':    'Contact',
+    'about-t1':       'Constructor',
+    'about-t2':       'of worlds.',
+    'about-p1':       '30+ years building brands, systems, campaigns. Not as an agency delivering files. As an <em class="e">operator</em> \u2014 someone who runs the machine, feels when it\u2019s off, and doesn\u2019t stop pushing until it isn\u2019t.',
+    'about-p2':       'I\u2019m obsessed with <strong>systems that produce at scale without losing intelligence.</strong> Most agencies produce output. I build infrastructure. The difference is compounding \u2014 it shows up in year three, not in the first deck.',
+    'about-p3':       'They called it artificial intelligence. I call it the most human thing we\u2019ve ever made. We built <strong style="color:var(--bone)">UNREAL&gt;ILLE STUDIO</strong> \u2014 sarcastically named, seriously built \u2014 because nothing we do is unreal. The results are the only reality that matters.',
+    'world-next':     'Next world \u2014',
+    'world-next-meta':'In construction.',
+    'wt1':            'Writing.',
+    'wt2':            'Thinking out loud.',
+    'writing-all':    'Read all writing \u2192',
+    'writing-intro':  'No calendar. No strategy. Just what\u2019s moving through my head at the moment I decide to write it down.',
+    'pt1':            'The intelligence was never artificial. We just didn\u2019t know what to call it.',
+    'pe1':            'On why the word \u201Cartificial\u201D was always the wrong word \u2014 and what it says about the people who kept using it.',
+    'pt2':            'Lo que las marcas no entienden sobre la consistencia.',
+    'pe2':            'Consistency no es repetici\u00f3n. Es un sistema que sabe qui\u00e9n es, en cualquier contexto, a cualquier escala.',
+    'pt3':            'Why I named it UNREAL. And why I\u2019d do it again.',
+    'pe3':            'A short history of a name that started as a provocation and became a posture. Some names choose you back.',
+    'pt4':            'Brand Intelligence Infrastructure \u2014 what it means and why most agencies will never build it.',
+    'pe4':            'The difference between producing content and encoding identity into a system. One scales. The other just accumulates.',
+    'pl5':            'Coming',
+    'pt5':            'The obsession as method.',
+    'pe5':            'On why relentlessness is not a personality trait \u2014 it\u2019s a system design.',
+    'ct1':            'Let\u2019s talk.',
+    'ct2':            'Or not.',
+    'ct-body':        'I\u2019m selective about conversations. If you\u2019ve read this far, you probably belong here. Tell me what you\u2019re building.',
+    'ct-alt':         '\u2192 Or talk to the studio directly',
+    'ct-or':          'or',
+    'cf-send':        'Send \u2192',
+    'footer-phrase':  'I build worlds. Some of them survive.',
+    'cf-name-ph':     'Name',
+    'cf-msg-ph':      'What are you building?'
+  },
+  es: {
+    'nav-writing':    'Art\u00edculos',
+    'nav-about':      'Sobre',
+    'nav-contact':    'Contacto',
+    'meta-phrase':    'Pensamiento en movimiento',
+    'h1':             'Construyo',
+    'h2':             'mundos.',
+    'h3':             'Algunos sobreviven.',
+    'hero-sub':       'Constructor. Pensador. Operador. M\u00e1s de 30 a\u00f1os convirtiendo criterio en sistemas que funcionan cuando todo lo dem\u00e1s falla. <strong>Brand Intelligence Infrastructure</strong> es lo que construyo.<span class="hero-cursor"></span>',
+    'q1':             '\u201CLo llamaron artificial. Nosotros lo llamamos inevitable. Lo \u00fanico artificial era <strong>el argumento en contra.</strong>\u201D',
+    'q2':             '\u201CNo hay mayor prueba de inteligencia humana que la creaci\u00f3n de lo que llaman <strong>inteligencia artificial.</strong> Pi\u00e9nsalo antes de usar la palabra falso.\u201D',
+    'q3':             '\u201CNo acepto briefs. Construyo sistemas. <strong>El brief es el \u00faltimo recurso de alguien que no conf\u00eda en el proceso.</strong> El proceso es todo.\u201D',
+    'lbl-about':      'Sobre',
+    'lbl-worlds':     'Mundos',
+    'lbl-contact':    'Contacto',
+    'about-t1':       'Constructor',
+    'about-t2':       'de mundos.',
+    'about-p1':       'M\u00e1s de 30 a\u00f1os construyendo marcas, sistemas, campa\u00f1as. No como agencia entregando archivos. Como <em class="e">operador</em> \u2014 alguien que corre la m\u00e1quina, siente cuando algo no funciona, y no para hasta que s\u00ed.',
+    'about-p2':       'Estoy obsesionado con los <strong>sistemas que producen a escala sin perder inteligencia.</strong> La mayor\u00eda de las agencias producen output. Yo construyo infraestructura. La diferencia se acumula \u2014 se nota en el tercer a\u00f1o, no en el primer deck.',
+    'about-p3':       'Lo llamaron inteligencia artificial. Yo lo llamo lo m\u00e1s humano que jam\u00e1s hemos creado. Construimos <strong style="color:var(--bone)">UNREAL&gt;ILLE STUDIO</strong> \u2014 con nombre sarc\u00e1stico, construcci\u00f3n en serio \u2014 porque nada de lo que hacemos es irreal. Los resultados son la \u00fanica realidad que importa.',
+    'world-next':     'Pr\u00f3ximo mundo \u2014',
+    'world-next-meta':'En construcci\u00f3n.',
+    'wt1':            'Art\u00edculos.',
+    'wt2':            'Pensando en voz alta.',
+    'writing-all':    'Ver todos los art\u00edculos \u2192',
+    'writing-intro':  'Sin calendario. Sin estrategia. Solo lo que est\u00e1 en mi cabeza en el momento en que decido escribirlo.',
+    'pt1':            'La inteligencia nunca fue artificial. Solo no sab\u00edamos c\u00f3mo llamarla.',
+    'pe1':            'Por qu\u00e9 la palabra \u201Cartificial\u201D siempre fue la equivocada \u2014 y lo que dice sobre quienes la usaron.',
+    'pt2':            'Lo que las marcas no entienden sobre la consistencia.',
+    'pe2':            'Consistency no es repetici\u00f3n. Es un sistema que sabe qui\u00e9n es, en cualquier contexto, a cualquier escala.',
+    'pt3':            'Por qu\u00e9 lo llam\u00e9 UNREAL. Y por qu\u00e9 lo volver\u00eda a hacer.',
+    'pe3':            'Una historia corta de un nombre que empez\u00f3 como provocaci\u00f3n y se convirti\u00f3 en postura. Algunos nombres te eligen a ti.',
+    'pt4':            'Brand Intelligence Infrastructure \u2014 qu\u00e9 significa y por qu\u00e9 la mayor\u00eda de las agencias nunca lo construir\u00e1n.',
+    'pe4':            'La diferencia entre producir contenido y codificar identidad en un sistema. Uno escala. El otro solo se acumula.',
+    'pl5':            'Pr\u00f3ximamente',
+    'pt5':            'La obsesi\u00f3n como m\u00e9todo.',
+    'pe5':            'Por qu\u00e9 la incansabilidad no es un rasgo de personalidad \u2014 es dise\u00f1o de sistema.',
+    'ct1':            'Hablemos.',
+    'ct2':            'O no.',
+    'ct-body':        'Soy selectivo con las conversaciones. Si llegaste hasta aqu\u00ed, probablemente perteneces. Cu\u00e9ntame qu\u00e9 est\u00e1s construyendo.',
+    'ct-alt':         '\u2192 O habla con el estudio directamente',
+    'ct-or':          'o',
+    'cf-send':        'Enviar \u2192',
+    'footer-phrase':  'Construyo mundos. Algunos sobreviven.',
+    'cf-name-ph':     'Nombre',
+    'cf-msg-ph':      '\u00bfQu\u00e9 est\u00e1s construyendo?'
+  }
+};
+
+let lang = 'en';
+function applyLang(l) {
+  lang = l;
+  document.getElementById('lang-btn').textContent = l === 'en' ? 'ES' : 'EN';
+  const S = STRINGS[l];
+  Object.keys(S).forEach(id => {
+    if (id === 'cf-name-ph') { const el = document.getElementById('cf-name'); if(el) el.placeholder = S[id]; return; }
+    if (id === 'cf-msg-ph')  { const el = document.getElementById('cf-msg');  if(el) el.placeholder = S[id]; return; }
+    const el = document.getElementById(id);
+    if (el) el.innerHTML = S[id];
+  });
+  buildTicker(l);
+}
+document.getElementById('lang-btn').addEventListener('click', () => {
+  applyLang(lang === 'en' ? 'es' : 'en');
+});
+
+/* ── SCROLL REVEALS ── */
+const revObs = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      e.target.style.animation = 'rise .85s ease forwards';
+      revObs.unobserve(e.target);
+    }
+  });
+}, { threshold:.1 });
+
+document.querySelectorAll(
+  '.about-title,.about-body,.post,.world-item,.contact-title,.writing-title,.quote-text,.quote-inner'
+).forEach(el => {
+  el.style.opacity = '0';
+  revObs.observe(el);
+});
+</script>
+
+</body>
+</html>
