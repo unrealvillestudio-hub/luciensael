@@ -324,6 +324,12 @@ textarea.cf-input { resize:none; min-height:120px; }
   font-family:var(--fm); font-size:12px; letter-spacing:.26em; text-transform:uppercase;
   color:var(--obsidian); transition:all .25s; align-self:flex-start; margin-top:4px; touch-action:manipulation; }
 .cf-btn:hover { background:transparent; color:var(--ember); }
+.cf-btn[disabled] { opacity:.6; pointer-events:none; }
+.cf-trap { position:absolute; left:-9999px; width:1px; height:1px; overflow:hidden; }
+.cf-status { font-family:var(--fb); font-size:16px; font-style:italic; color:var(--parchment); min-height:1.6em; margin-top:10px; }
+.cf-status.ok { color:var(--bone); }
+.cf-status.ok::before { content:'● '; color:var(--mercurio); font-style:normal; }
+.cf-status a { color:var(--ember); }
 .contact-or { font-family:var(--fm); font-size:10px; letter-spacing:.22em; text-transform:uppercase;
   color:var(--parchment); margin-top:24px; display:flex; align-items:center; gap:12px; }
 .contact-or::before,.contact-or::after { content:''; flex:1; height:1px; background:var(--bone-06); }
@@ -595,11 +601,17 @@ footer { border-top:2px solid var(--ember); background:var(--obsidian);
         </a>
       </div>
       <div>
-        <form class="contact-form" onsubmit="return false;">
-          <input class="cf-input" id="cf-name" type="text" name="name" autocomplete="name" placeholder="Name" aria-label="Name">
-          <input class="cf-input" id="cf-email" type="email" name="email" autocomplete="email" inputmode="email" placeholder="Email" aria-label="Email">
-          <textarea class="cf-input" id="cf-msg" name="message" placeholder="What are you building?" aria-label="What are you building?"></textarea>
+        <!-- A iam@luciensael.com por /api/contact. Sin JS es un POST normal; con JS se envía sin
+             salir de la página. Si la ruta no está configurada o falla, se abre el correo del
+             visitante con el mensaje ya escrito: el mensaje no se pierde. -->
+        <form class="contact-form" id="contact-form" action="/api/contact" method="post">
+          <input class="cf-input" id="cf-name" type="text" name="name" autocomplete="name" placeholder="Name" aria-label="Name" required maxlength="200">
+          <input class="cf-input" id="cf-email" type="email" name="email" autocomplete="email" inputmode="email" placeholder="Email" aria-label="Email" required maxlength="254">
+          <textarea class="cf-input" id="cf-msg" name="message" placeholder="What are you building?" aria-label="What are you building?" required maxlength="5000"></textarea>
+          <!-- Trampa para robots: oculta para las personas y para los lectores de pantalla. -->
+          <div class="cf-trap" aria-hidden="true"><label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
           <button class="cf-btn" id="cf-send" type="submit">Send →</button>
+          <p class="cf-status" id="cf-status" role="status" aria-live="polite"></p>
         </form>
         <div class="contact-or" id="ct-or">or</div>
         <a href="mailto:iam@luciensael.com" class="contact-alt">→ iam@luciensael.com</a>
@@ -737,7 +749,12 @@ const STRINGS = {
     'footer-phrase':  'I build worlds. Some of them survive.',
     'footer-blog':    'Writing',
     'cf-name-ph':     'Name',
-    'cf-msg-ph':      'What are you building?'
+    'cf-msg-ph':      'What are you building?',
+    'cf-sending':     'Sending…',
+    'cf-sent':        'Received. I read everything that arrives here.',
+    'cf-invalid':     'Name, a valid email and a message, please.',
+    'cf-fallback':    'The form could not send it. Your email app is opening with the message ready for',
+    'cf-subject':     'From luciensael.com'
   },
   es: {
     'nav-writing':    'Artículos',
@@ -782,7 +799,12 @@ const STRINGS = {
     'footer-phrase':  'Construyo mundos. Algunos sobreviven.',
     'footer-blog':    'Artículos',
     'cf-name-ph':     'Nombre',
-    'cf-msg-ph':      '¿Qué estás construyendo?'
+    'cf-msg-ph':      '¿Qué estás construyendo?',
+    'cf-sending':     'Enviando…',
+    'cf-sent':        'Recibido. Leo todo lo que llega aquí.',
+    'cf-invalid':     'Nombre, un correo válido y un mensaje, por favor.',
+    'cf-fallback':    'El formulario no pudo enviarlo. Se abre tu correo con el mensaje listo para',
+    'cf-subject':     'Desde luciensael.com'
   }
 };
 
@@ -847,6 +869,42 @@ fetch('/api/blog-latest', { headers: { Accept: 'application/json' } })
     if (data && Array.isArray(data.posts) && data.posts.length) { latest = data.posts; renderPosts(); }
   })
   .catch(() => { /* se queda el respaldo escrito en el HTML */ });
+
+/* ── CONTACTO: a iam@luciensael.com ── */
+(function () {
+  const form = document.getElementById('contact-form');
+  const status = document.getElementById('cf-status');
+  const send = document.getElementById('cf-send');
+  const TO = 'iam@luciensael.com';
+  function say(text, cls) { status.className = 'cf-status' + (cls ? ' ' + cls : ''); status.textContent = text; }
+  // El respaldo: el correo del visitante, con asunto y cuerpo ya escritos.
+  function fallback(data) {
+    const S = STRINGS[lang];
+    const href = 'mailto:' + TO + '?subject=' + encodeURIComponent(S['cf-subject'] + ' — ' + data.name)
+      + '&body=' + encodeURIComponent(data.message + '\n\n— ' + data.name + ' <' + data.email + '>');
+    say(S['cf-fallback'] + ' ');
+    const a = document.createElement('a'); a.href = href; a.textContent = TO; status.appendChild(a);
+    window.location.href = href;
+  }
+  // Resultado de un envío sin JS: la ruta redirige aquí con ?sent=1 o ?error=…
+  const q = new URLSearchParams(location.search);
+  if (q.has('sent')) say(STRINGS[lang]['cf-sent'], 'ok');
+  else if (q.has('error')) say(STRINGS[lang]['cf-invalid']);
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(form);
+    const data = { name: String(fd.get('name') || '').trim(), email: String(fd.get('email') || '').trim(), message: String(fd.get('message') || '').trim(), website: String(fd.get('website') || '') };
+    if (!data.name || !data.message || !data.email || !form.querySelector('#cf-email').checkValidity()) { say(STRINGS[lang]['cf-invalid']); return; }
+    send.disabled = true; say(STRINGS[lang]['cf-sending']);
+    try {
+      const r = await fetch('/api/contact', { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify(data) });
+      if (r.ok) { form.reset(); say(STRINGS[lang]['cf-sent'], 'ok'); }
+      else if (r.status === 400) say(STRINGS[lang]['cf-invalid']);
+      else fallback(data);
+    } catch (_) { fallback(data); }
+    finally { send.disabled = false; }
+  });
+})();
 
 /* ── SCROLL REVEALS (sólo con JS: sin él, .reveal no oculta nada) ── */
 if ('IntersectionObserver' in window) {

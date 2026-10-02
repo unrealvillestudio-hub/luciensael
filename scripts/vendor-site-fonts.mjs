@@ -30,7 +30,7 @@ const KEEP_SUBSETS = new Set(['latin', 'latin-ext']);
 // que no se carga hace que el navegador SINTETICE una negrita o una cursiva falsa.
 const FAMILIES = [
   'Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400', // display: logotipo, titulares, citas
-  'Crimson+Pro:ital,wght@0,300;0,400;0,500;1,300;1,400',          // body: prosa y titulares del blog
+  'Crimson+Pro:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400',    // body: prosa, titulares del blog, negrita del artículo anterior
   'JetBrains+Mono:wght@300;400',                                  // mono: etiquetas, navegación, datos
   'Bebas+Neue',                                                   // logotipo de >UNREALVILLE studio
 ];
