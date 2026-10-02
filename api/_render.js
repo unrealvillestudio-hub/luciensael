@@ -23,7 +23,7 @@
 // del sitio y la URL canónica se construyen desde `config` del canal; los tokens de
 // color se declaran una sola vez y coinciden con los de `index.html`.
 
-import { emphasisToHtml } from './_inline.js';
+import { emphasisToHtml, stripEmphasis, blocksOf } from './_inline.js';
 
 export function escapeHtml(s) {
   return String(s ?? '')
@@ -85,6 +85,10 @@ const STYLE = `
   --chalk-12:rgba(237,232,223,0.12);--chalk-06:rgba(237,232,223,0.06);--gold:#B8922A;
   --font-display:'Cormorant Garamond',Georgia,serif;--font-serif:'Crimson Pro',Georgia,serif;
   --font-sans:'JetBrains Mono',monospace;--font-editorial:'Cormorant Garamond',Georgia,serif;
+  /* Acentos del BP (2026-10-02), los mismos que la portada: ember es el calor (--a1), gold el
+     detalle (--a2: resaltado de negritas, índice de sección) y Mercurio el frío (--a3: punto
+     vivo, filete). Mercurio sobre void: 6,58:1. */
+  --a1:var(--ember);--a2:var(--gold);--a2s:rgba(184,146,42,0.26);--a3:#8D989C;
 }
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--void);color:var(--chalk);font-family:var(--font-sans);-webkit-font-smoothing:antialiased}
@@ -166,6 +170,30 @@ footer a{color:var(--chalk-72);text-decoration:none}
 .mark{min-height:44px;align-items:center}
 .topbar nav a{display:inline-flex;align-items:center;justify-content:center;min-height:44px}
 .lede{font-family:var(--font-serif);font-style:italic}
+/* ── Formato editorial (F1, 2026-10-02) — el de la maqueta v4 aprobada ── */
+.eyebrow{display:flex;align-items:center;gap:10px}
+.eyebrow::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--a3);box-shadow:0 0 0 4px rgba(141,152,156,.18);flex:none}
+article p.lede{font-size:21px;line-height:1.6;color:var(--chalk);font-style:normal}
+article strong{color:var(--chalk);font-weight:600;background:linear-gradient(transparent 62%,var(--a2s) 62%) no-repeat;padding:0 .08em}
+article .sec{margin:2.4em 0 .9em;display:grid;gap:10px}
+article .sec .idx{display:flex;align-items:center;gap:12px;font-family:var(--font-sans);font-size:11px;font-weight:400;letter-spacing:.2em;text-transform:uppercase;color:var(--a2)}
+article .sec .idx::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--a2),var(--a1) 40%,transparent);opacity:.55}
+article h2{font-family:var(--font-display);font-weight:300;font-size:clamp(28px,4.2vw,38px);line-height:1.1;color:var(--chalk);text-wrap:balance}
+article blockquote.pull{position:relative;margin:2.2em 0;padding:6px 0 6px 26px}
+article blockquote.pull::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:2px;background:linear-gradient(180deg,var(--a1),var(--a2))}
+article blockquote.pull p{font-family:var(--font-display);font-style:italic;font-weight:300;font-size:clamp(26px,3.6vw,36px);line-height:1.18;color:var(--chalk);margin:0}
+article blockquote.pull strong{background:none;color:var(--a1);font-weight:300;padding:0}
+article p.closer{font-style:italic;color:var(--chalk-72);margin-top:1.6em}
+/* «Keep reading» con la imagen de cada artículo (Sam, 2026-10-02). Sin imagen, la tarjeta
+   se apoya en el título y no reserva hueco. */
+.related ul{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr))}
+.related ul>li{min-width:0;border-top:0}
+.related a.rel{display:flex;flex-direction:column;height:100%;padding:0;border:1px solid var(--chalk-12);border-radius:3px;overflow:hidden;background:var(--carbon);transition:border-color .18s}
+.related a.rel:hover{border-color:var(--a1)}
+.related a.rel .thumb{display:block;aspect-ratio:16/9;overflow:hidden;background:var(--graphite)}
+.related a.rel .thumb img{display:block;width:100%;height:100%;object-fit:cover}
+.related a.rel .t{display:block;padding:14px 16px 16px;font-family:var(--font-serif);font-size:17px;line-height:1.4;color:var(--chalk-72)}
+.related a.rel:hover .t{color:var(--chalk)}
 @media(max-width:719px){.topbar nav{width:100%;gap:0;font-size:12px;border-top:1px solid var(--chalk-06)}
 .topbar nav a{flex:1 1 0;min-height:48px}.hero{padding:48px 0 30px}}
 `;
@@ -407,12 +435,27 @@ ${body}
 // La negrita (`**texto**`) se traduce DESPUÉS de escapar, sobre el texto ya inerte: ver
 // `_inline.js`.
 export function paragraphs(body) {
-  const parts = String(body || '')
-    .split(/\n\s*\n/)
-    .map((p) => p.trim())
-    .filter(Boolean);
-  if (!parts.length) return '';
-  return parts.map((p) => `<p>${emphasisToHtml(escapeHtml(p)).replace(/\n/g, '<br>')}</p>`).join('\n');
+  const blocks = blocksOf(body);
+  if (!blocks.length) return '';
+  // Formato editorial (F1, 2026-10-02): el primer párrafo es la entradilla; cada `##` abre
+  // una sección numerada; `>` es la cita destacada. El último párrafo que empieza con raya
+  // (—) es el cierre de firma de la marca y se compone aparte.
+  const inline = (t) => emphasisToHtml(escapeHtml(t)).replace(/\n/g, '<br>');
+  const lastP = blocks.map((b) => b.t).lastIndexOf('p');
+  let firstP = true;
+  let sec = 0;
+  return blocks.map((b, i) => {
+    if (b.t === 'h') {
+      sec += 1;
+      // El subtítulo no lleva negrita: ya es un titular. Se quitan los `**` sin pintarlos.
+      return `<div class="sec"><span class="idx" aria-hidden="true">§ ${String(sec).padStart(2, '0')}</span><h2>${escapeHtml(stripEmphasis(b.text))}</h2></div>`;
+    }
+    if (b.t === 'quote') return `<blockquote class="pull"><p>${inline(b.text)}</p></blockquote>`;
+    let cls = '';
+    if (firstP) { cls = ' class="lede"'; firstP = false; }
+    else if (i === lastP && /^[—–]\s/.test(b.text)) cls = ' class="closer"';
+    return `<p${cls}>${inline(b.text)}</p>`;
+  }).join('\n');
 }
 
 export function formatStamp(iso, config) {
