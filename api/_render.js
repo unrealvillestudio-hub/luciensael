@@ -145,8 +145,10 @@ article p:last-child{margin-bottom:0}
    que mide su contenido. Estirarlas a la altura de la fila abriría, dentro de la tarjeta
    SIN imagen, exactamente el hueco que este bloque prohíbe — el alto lo impondría la
    imagen de la vecina. Las columnas siguen alineadas; solo el borde inferior varía. */
-.card .shot{margin-top:16px;border-radius:2px;overflow:hidden;aspect-ratio:16/9}
-.card .shot img{display:block;width:100%;height:100%;object-fit:cover}
+.card .shot{margin-top:16px;border-radius:2px;overflow:hidden}
+/* Las imágenes del carril son piezas compuestas con el titular en la franja inferior: se muestran
+   enteras, a su propia proporción. Un recorte 16:9 cortaba el texto (Sam, 2026-10-02). */
+.card .shot img{display:block;width:100%;height:auto}
 .related{margin-top:56px;padding-top:30px;border-top:1px solid var(--amethyst)}
 .related h2{font-family:var(--font-display);font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--terra);margin-bottom:6px}
 .related .why{font-size:13px;color:var(--chalk-42);margin-bottom:14px}
@@ -190,8 +192,8 @@ article p.closer{font-style:italic;color:var(--chalk-72);margin-top:1.6em}
 .related ul>li{min-width:0;border-top:0}
 .related a.rel{display:flex;flex-direction:column;height:100%;padding:0;border:1px solid var(--chalk-12);border-radius:3px;overflow:hidden;background:var(--carbon);transition:border-color .18s}
 .related a.rel:hover{border-color:var(--a1)}
-.related a.rel .thumb{display:block;aspect-ratio:16/9;overflow:hidden;background:var(--graphite)}
-.related a.rel .thumb img{display:block;width:100%;height:100%;object-fit:cover}
+.related a.rel .thumb{display:block;overflow:hidden;background:var(--graphite)}
+.related a.rel .thumb img{display:block;width:100%;height:auto}
 .related a.rel .t{display:block;padding:14px 16px 16px;font-family:var(--font-serif);font-size:17px;line-height:1.4;color:var(--chalk-72)}
 .related a.rel:hover .t{color:var(--chalk)}
 @media(max-width:719px){.topbar nav{width:100%;gap:0;font-size:12px;border-top:1px solid var(--chalk-06)}
