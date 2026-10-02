@@ -711,6 +711,8 @@ console.log('\n── 25 · «Keep reading» lleva la imagen de cada artículo �
   // Las imágenes del carril llevan el titular en la franja inferior: ningún marco las recorta.
   const marcos = (r.body.match(/\.(?:card \.shot|related a\.rel \.thumb)(?: img)?\{[^}]*\}/g) || []).join(' ');
   check('las miniaturas se ven enteras: sin aspect-ratio ni object-fit:cover', marcos.length > 0 && !/aspect-ratio|object-fit:cover/.test(marcos), marcos);
+  const lista = (r.body.match(/\.list\{[^}]*\}/) || [''])[0];
+  check('la grilla del índice no impone un mínimo fijo: minmax(min(100%,…))', /minmax\(min\(100%,\s*\d+px\),\s*1fr\)/.test(lista), lista);
 }
 
 console.log(`\n═══ ${pass} pasaron · ${fail} fallaron ═══`);

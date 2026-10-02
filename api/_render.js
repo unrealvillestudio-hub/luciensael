@@ -132,7 +132,9 @@ h1{font-family:var(--font-serif);font-size:clamp(30px,5.2vw,46px);font-weight:50
 article{padding:44px 0 8px}
 article p{font-family:var(--font-serif);font-size:19px;line-height:1.72;color:rgba(249,248,255,.86);margin-bottom:22px}
 article p:last-child{margin-bottom:0}
-.list{list-style:none;padding:46px 0 0;display:grid;gap:18px;align-items:start;grid-template-columns:repeat(auto-fill,minmax(292px,1fr))}
+.list{list-style:none;padding:46px 0 0;display:grid;gap:18px;align-items:start;grid-template-columns:repeat(auto-fill,minmax(min(100%,292px),1fr))}
+/* min(100%,…): con el zoom de página de Chrome en Android el ancho efectivo baja de 316 px y una
+   columna fija de 292 px desbordaba la página en horizontal (Sam, 2026-10-02). */
 .card{display:flex;flex-direction:column;text-decoration:none;background:var(--carbon);border:1px solid var(--chalk-12);border-radius:3px;padding:24px 24px 22px;transition:border-color .18s,background .18s}
 .card:hover{border-color:var(--terra);background:var(--surface)}
 .card .topic{font-family:var(--font-editorial);font-size:12px;font-weight:300;letter-spacing:.22em;text-transform:uppercase;color:var(--terra);margin-bottom:13px}
