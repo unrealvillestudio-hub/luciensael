@@ -23,7 +23,7 @@
 // del sitio y la URL canónica se construyen desde `config` del canal; los tokens de
 // color se declaran una sola vez y coinciden con los de `index.html`.
 
-import { emphasisToHtml, stripEmphasis, blocksOf } from './_inline.js';
+import { emphasisToHtml, stripEmphasis, blocksOf, inlineImagesOf } from './_inline.js';
 
 export function escapeHtml(s) {
   return String(s ?? '')
@@ -188,6 +188,12 @@ article blockquote.pull::before{content:'';position:absolute;left:0;top:0;bottom
 article blockquote.pull p{font-family:var(--font-display);font-style:italic;font-weight:300;font-size:clamp(26px,3.6vw,36px);line-height:1.18;color:var(--chalk);margin:0}
 article blockquote.pull strong{background:none;color:var(--a1);font-weight:300;padding:0}
 article p.closer{font-style:italic;color:var(--chalk-72);margin-top:1.6em}
+/* Imagen dentro del artículo (F2, 2026-10-02): el ancho de la columna de texto, a su propia
+   proporción y sin recorte — el mismo criterio que las miniaturas de arriba: nada de
+   aspect-ratio ni object-fit. width:100% de la columna, nunca un mínimo fijo, así que cabe
+   igual a 300 px de ancho efectivo (zoom de Chrome en Android). */
+article .inline-figure{margin:2em 0;border-radius:4px;overflow:hidden}
+article .inline-figure img{display:block;width:100%;max-width:100%;height:auto}
 /* «Keep reading» con la imagen de cada artículo (Sam, 2026-10-02). Sin imagen, la tarjeta
    se apoya en el título y no reserva hueco. */
 .related ul{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(min(100%,220px),1fr))}
@@ -438,9 +444,16 @@ ${body}
 // Cuerpo de texto plano → párrafos. El texto va escapado: nunca se inyecta HTML de la DB.
 // La negrita (`**texto**`) se traduce DESPUÉS de escapar, sobre el texto ya inerte: ver
 // `_inline.js`.
-export function paragraphs(body) {
+//
+// `inlineImages` (F2, 2026-10-02) son las imágenes de `assets.inline_images`. Se vuelven a
+// filtrar aquí con la MISMA regla que en la lectura —`ok`, url https, `n` del contrato—
+// porque esta función pinta HTML y no puede fiarse de quién la llama. Una marca `![img-N]`
+// sin imagen pintable no deja nada: ni la figura ni el texto de la marca.
+export function paragraphs(body, inlineImages = []) {
   const blocks = blocksOf(body);
   if (!blocks.length) return '';
+  const images = new Map(inlineImagesOf(inlineImages).map((img) => [img.n, img]));
+  const painted = new Set();
   // Formato editorial (F1, 2026-10-02): el primer párrafo es la entradilla; cada `##` abre
   // una sección numerada; `>` es la cita destacada. El último párrafo que empieza con raya
   // (—) es el cierre de firma de la marca y se compone aparte.
@@ -449,6 +462,13 @@ export function paragraphs(body) {
   let firstP = true;
   let sec = 0;
   return blocks.map((b, i) => {
+    if (b.t === 'img') {
+      // Cada imagen se pinta una sola vez, en su primera marca.
+      const img = painted.has(b.n) ? null : images.get(b.n);
+      if (!img) return '';
+      painted.add(b.n);
+      return `<figure class="inline-figure"><img src="${escapeHtml(img.url)}" alt="${escapeHtml(img.alt)}" loading="lazy" decoding="async"></figure>`;
+    }
     if (b.t === 'h') {
       sec += 1;
       // El subtítulo no lleva negrita: ya es un titular. Se quitan los `**` sin pintarlos.
@@ -459,7 +479,7 @@ export function paragraphs(body) {
     if (firstP) { cls = ' class="lede"'; firstP = false; }
     else if (i === lastP && /^[—–]\s/.test(b.text)) cls = ' class="closer"';
     return `<p${cls}>${inline(b.text)}</p>`;
-  }).join('\n');
+  }).filter(Boolean).join('\n');
 }
 
 export function formatStamp(iso, config) {
