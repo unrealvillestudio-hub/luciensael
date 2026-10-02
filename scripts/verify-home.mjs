@@ -114,7 +114,7 @@ console.log('\nObjetivos táctiles (390 px)');
 {
   const { ctx, page } = await open(390);
   const small = await page.evaluate(() => [...document.querySelectorAll('a[href], button, input, textarea')]
-    .filter((e) => !e.closest('.drawer') && !e.classList.contains('skip-link'))
+    .filter((e) => !e.closest('.drawer,.cf-trap') && !e.classList.contains('skip-link'))
     .map((e) => ({ e, r: e.getBoundingClientRect() }))
     .filter(({ r }) => r.width > 0 && r.height > 0 && (r.height < 44 || r.width < 44))
     .map(({ e, r }) => `${e.id || e.className || e.tagName}:${Math.round(r.width)}×${Math.round(r.height)}`));
@@ -156,6 +156,45 @@ for (const w of [360, 390, 768, 1280, 1440]) {
   const over = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   ok(errors.length === 0 && over <= 0, `${w} px: sin errores y sin desborde`, `${errors.join(' ; ')} desborde ${over}px`);
   if (SHOTS && w < 900) await page.screenshot({ path: join(SHOTS, `home-${w}.png`), fullPage: true });
+  await ctx.close();
+}
+
+// ── 10 · formulario de contacto ──
+console.log('\nContacto');
+for (const [status, label] of [[200, 'enviado'], [503, 'sin configurar'], [502, 'Resend falla']]) {
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 820 }, isMobile: true, hasTouch: true });
+  const page = await ctx.newPage();
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  let posted = null;
+  await page.route('**/api/blog-latest*', (r) => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(FIXTURE) }));
+  await page.route('**/api/contact', (r) => { posted = r.request().postDataJSON(); return r.fulfill({ status, contentType: 'application/json', body: JSON.stringify(status === 200 ? { ok: true } : { error: 'x', fallback: 'iam@luciensael.com' }) }); });
+  // El respaldo navega a un mailto:; aquí se registra en vez de abrir un cliente de correo.
+  await page.addInitScript(() => { window.__mailto = null; document.addEventListener('click', () => {}, true); });
+  await page.goto(url, { waitUntil: 'networkidle' });
+  await page.fill('#cf-name', 'Ana');
+  await page.fill('#cf-email', 'ana@example.com');
+  await page.fill('#cf-msg', 'Hola');
+  await page.click('#cf-send');
+  await page.waitForTimeout(400);
+  const st = await page.$eval('#cf-status', (e) => ({ text: e.textContent, cls: e.className, link: e.querySelector('a')?.getAttribute('href') ?? '' }));
+  if (status === 200) ok(posted?.email === 'ana@example.com' && st.cls.includes('ok'), `${label}: confirma en la página`, JSON.stringify(st));
+  else ok(st.link.startsWith('mailto:iam@luciensael.com') && st.link.includes('Hola'), `${label}: respaldo al correo de Lucien con el mensaje escrito`, JSON.stringify(st));
+  ok(errors.length === 0, `${label}: sin errores de página`, errors.join(' ; '));
+  await ctx.close();
+}
+
+// ── 11 · el artículo anterior al sistema también usa las fuentes propias ──
+console.log('\nArtículo anterior al sistema');
+{
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 820 }, isMobile: true, hasTouch: true });
+  const page = await ctx.newPage();
+  const external = [];
+  page.on('request', (r) => { if (!r.url().startsWith(url) && !r.url().startsWith('data:')) external.push(r.url()); });
+  await page.goto(url + 'blog/the-intelligence-was-never-artificial.html', { waitUntil: 'networkidle' });
+  const fams = await page.evaluate(() => [...new Set([...document.fonts].filter((f) => f.status === 'loaded').map((f) => f.family.replace(/"/g, '')))]);
+  ok(external.length === 0, 'cero peticiones a terceros', external.slice(0, 3).join(' '));
+  ok(['Cormorant Garamond', 'Crimson Pro'].every((f) => fams.includes(f)), 'Cormorant Garamond y Crimson Pro cargadas', fams.join(', '));
   await ctx.close();
 }
 
