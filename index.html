@@ -301,6 +301,12 @@ nav.s { background:rgba(28,28,26,.94); backdrop-filter:blur(14px); -webkit-backd
 .post-meta { font-family:var(--fm); font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:var(--parchment);
   display:flex; align-items:center; gap:12px; }
 .post-arrow { color:var(--ember); font-size:14px; transition:transform .2s; }
+/* La imagen de cada artículo (Sam, 2026-10-02): una miniatura ENTERA, a su proporción. La pieza
+   compuesta lleva el titular en la franja inferior y un recorte lo cortaría. Sin imagen, la fila
+   queda como antes y no reserva hueco. */
+.post.has-thumb { grid-template-columns:76px minmax(0,1fr); }
+.post-thumb { display:block; align-self:start; grid-row:span 2; border:1px solid var(--bone-06); overflow:hidden; background:var(--carbon); }
+.post-thumb img { display:block; width:100%; height:auto; }
 .post:hover .post-arrow { transform:translateX(4px); }
 .writing-foot { margin-top:40px; display:flex; flex-wrap:wrap; align-items:center; gap:16px 24px; }
 .writing-foot .nav-link { display:inline-flex; align-items:center; min-height:44px; font-size:12px; }
@@ -359,6 +365,8 @@ footer { border-top:2px solid var(--ember); background:var(--obsidian);
   :root { --gutter:40px; }
   .post { grid-template-columns:56px minmax(0,1fr) auto; gap:24px; padding:28px 24px; }
   .post-n { display:block; }
+  .post.has-thumb { grid-template-columns:56px 112px minmax(0,1fr) auto; }
+  .post.has-thumb .post-thumb { grid-row:auto; }
   .post-meta { flex-direction:column; align-items:flex-end; gap:6px; text-align:right; line-height:1.8; }
   .quote-band { padding:72px 0; }
   .quote-band::before { left:48px; font-size:280px; }
@@ -846,12 +854,20 @@ function stampOf(iso) {
   if (Number.isNaN(d.getTime())) return '';
   return new Intl.DateTimeFormat(lang === 'es' ? 'es' : 'en-US', { month:'short', year:'numeric', timeZone:'UTC' }).format(d);
 }
+// Sólo una dirección https o una ruta del propio sitio llega al src: nada de javascript:, data:
+// ni rutas de protocolo relativo.
+function imgOf(u) {
+  const s = String(u ?? '').trim();
+  return /^https:\/\//i.test(s) || /^\/(?!\/)/.test(s) ? s : '';
+}
 function renderPosts() {
   if (!latest || !latest.length) return;
   document.getElementById('posts').innerHTML = latest.map((p, i) => {
     const tag = p.topic || (p.language ? String(p.language).toUpperCase() : '');
-    return `<a href="${esc(p.href)}" class="post">
+    const img = imgOf(p.image_url);
+    return `<a href="${esc(p.href)}" class="post${img ? ' has-thumb' : ''}">
       <div class="post-n" aria-hidden="true">${String(i + 1).padStart(2, '0')}</div>
+      ${img ? `<span class="post-thumb"><img src="${esc(img)}" alt="" loading="lazy" decoding="async"></span>` : ''}
       <div class="post-body">
         ${tag ? `<div class="post-lang">${esc(tag)}</div>` : ''}
         <div class="post-title">${esc(p.title)}</div>

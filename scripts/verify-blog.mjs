@@ -661,6 +661,7 @@ console.log('\n── 23 · /api/blog-latest: la sección Writing de la portada 
     JSON.stringify(posts.map((p) => p.published_iso)));
   check('ninguna pieza descartada', !posts.some((p) => p.title === 'Pieza retirada por calidad'));
   check('href bajo /blog/', posts.every((p) => p.href.startsWith('/blog/')));
+  check('cada pieza lleva su imagen y el artículo anterior al sistema va sin ella', posts.some((p) => p.image_url === 'https://cdn.example.invalid/a.png') && posts.filter((p) => p.href === '/blog/the-intelligence-was-never-artificial').every((p) => !p.image_url), JSON.stringify(posts.map((p) => p.image_url)));
   check('misma caché que /blog y noindex', r.headers['cache-control'] === 's-maxage=300, stale-while-revalidate=86400' && r.headers['x-robots-tag'] === 'noindex');
   const all = mockRes(); await blogLatest(mockReq({ limit: '99' }), all);
   check('limit acotado a 8', (all._json?.posts ?? []).length <= 8);

@@ -24,6 +24,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..');
 const TYPES = { '.html': 'text/html; charset=utf-8', '.css': 'text/css', '.woff2': 'font/woff2', '.png': 'image/png', '.js': 'text/javascript' };
 const SHOTS = process.env.SHOTS_DIR || null;
+const THUMB_PNG = 'iVBORw0KGgoAAAANSUhEUgAAAMgAAABkCAIAAABM5OhcAAAAx0lEQVR42u3SMQ0AAAzDsAIrf1xFMWmHDSFKCgciAcbCWBgLjIWxMBYYC2NhLDAWxsJYYCyMhbHAWBgLY4GxMBbGAmNhLIwFxsJYGAuMhbEwFhgLY2EsMBbGwlhgLIyFscBYGAtjgbEwFsYCY2EsjAXGwlgYC4yFsTAWGAtjYSwwFsbCWGAsjIWxwFgYC2OBsTAWxgJjYSyMBcbCWBgLjIWxMBYYC2NhLDAWxsJYYCyMhbEwFhgLY2EsMBbGwlhgLIyFscBY/DaeYvGrcZphcgAAAABJRU5ErkJggg==';
 
 let pw;
 try { pw = await import(process.env.PLAYWRIGHT_MODULE || 'playwright'); }
@@ -32,6 +33,8 @@ const chromium = pw.chromium ?? pw.default?.chromium;
 
 const server = createServer(async (req, res) => {
   const path = decodeURIComponent(new URL(req.url, 'http://x').pathname);
+  // Miniatura de prueba, 200×100: no es cuadrada a propósito, para que un recorte se note.
+  if (path === '/__fixture/thumb.png') { res.writeHead(200, { 'Content-Type': 'image/png' }).end(Buffer.from(THUMB_PNG, 'base64')); return; }
   const file = normalize(join(ROOT, path === '/' ? 'index.html' : path));
   if (!file.startsWith(ROOT)) { res.writeHead(403).end(); return; }
   let body;
@@ -44,8 +47,8 @@ const url = `http://localhost:${server.address().port}/`;
 const FIXTURE = {
   blog_path: '/blog',
   posts: [
-    { href: '/blog/pieza-nueva-1', title: 'Pieza nueva <img src=x onerror="window.__xss=1">', excerpt: 'Extracto uno.', topic: 'Behavioral Science', language: 'en', published_iso: '2026-10-01T12:00:00Z' },
-    { href: '/blog/pieza-nueva-2', title: 'Segunda pieza', excerpt: 'Extracto dos.', topic: null, language: 'es', published_iso: '2026-09-20T12:00:00Z' },
+    { href: '/blog/pieza-nueva-1', title: 'Pieza nueva <img src=x onerror="window.__xss=1">', excerpt: 'Extracto uno.', topic: 'Behavioral Science', language: 'en', published_iso: '2026-10-01T12:00:00Z', image_url: 'javascript:window.__xss=2' },
+    { href: '/blog/pieza-nueva-2', title: 'Segunda pieza', excerpt: 'Extracto dos.', topic: null, language: 'es', published_iso: '2026-09-20T12:00:00Z', image_url: '/__fixture/thumb.png' },
     { href: '/blog/the-intelligence-was-never-artificial', title: 'The intelligence was never artificial.', excerpt: 'Legacy.', topic: 'EN · ES', language: null, published_iso: '2026-04-18T00:00:00Z' },
   ],
 };
@@ -87,7 +90,14 @@ console.log('\nContenido');
   ok(cta.href === '/blog' && cta.vis, 'la sección Writing tiene un botón visible al blog');
   const titles = await page.$$eval('#posts .post-title', (els) => els.map((e) => e.textContent));
   ok(titles.length === 3 && titles[0].startsWith('Pieza nueva'), 'la sección se llena con /api/blog-latest', JSON.stringify(titles));
-  ok(await page.evaluate(() => !window.__xss && !document.querySelector('#posts img')), 'un título con HTML se escribe como texto');
+  ok(await page.evaluate(() => !window.__xss && !document.querySelector('#posts .post-title img')), 'un título con HTML se escribe como texto');
+  // La miniatura es lazy: se lleva la sección a la vista y se espera a que cargue antes de medir.
+  await page.$eval('#posts', (e) => e.scrollIntoView({ behavior: 'instant' }));
+  await page.waitForFunction(() => [...document.querySelectorAll('#posts .post-thumb img')].every((i) => i.complete && i.naturalWidth > 0), null, { timeout: 5000 }).catch(() => {});
+  const thumbs = await page.$$eval('#posts .post-thumb img', (els) => els.map((e) => ({ src: e.getAttribute('src'), w: e.getBoundingClientRect().width, h: e.getBoundingClientRect().height, nw: e.naturalWidth, nh: e.naturalHeight })));
+  ok(thumbs.length === 1 && thumbs[0].src === '/__fixture/thumb.png', 'la miniatura sale de image_url y una dirección javascript: no llega al src', JSON.stringify(thumbs));
+  ok(thumbs.length === 1 && thumbs[0].nw > 0 && Math.abs(thumbs[0].h / thumbs[0].w - thumbs[0].nh / thumbs[0].nw) < 0.02, 'la miniatura se ve entera, a su proporción', JSON.stringify(thumbs));
+  ok(await page.$$eval('#posts .post', (els) => els.filter((e) => e.classList.contains('has-thumb')).length === 1), 'sin imagen, la fila no reserva hueco');
   const html = await page.content();
   ok(!/UNREAL(&gt;|>)ILLE/.test(html), 'ninguna forma derogada «UNREAL>ILLE» en la página');
   ok(await page.$('.world-item .lt-logotype .lt-chevron') !== null, 'Worlds muestra >UNREALVILLE studio con su chevron');
