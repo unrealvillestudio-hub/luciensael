@@ -3,6 +3,7 @@ import blogIndex from '../api/blog-index.js';
 import blogArticle from '../api/blog-article.js';
 import sitemap from '../api/sitemap.js';
 import robots from '../api/robots.js';
+import blogLatest from '../api/blog-latest.js';
 
 process.env.SUPABASE_URL = 'https://db.example.invalid';
 process.env.SUPABASE_SERVICE_ROLE_KEY = 'no-es-un-secreto-valor-simulado';
@@ -601,6 +602,74 @@ console.log('\n── 21-bis · La negrita del generador se pinta; un asterisco 
   check('el extracto (meta description, listado) no lleva asteriscos',
     ex === 'Here is the mechanism. It matters that you understand it.', ex);
   check('el extracto conserva un asterisco suelto', excerptOf('Rated 4* by readers.') === 'Rated 4* by readers.');
+}
+
+console.log('\n── 22 · Wordmark: disposición, cursiva, escala y parpadeo salen del dato ──');
+{
+  // El logotipo de la cabecera del blog. Antes de esto, sin `config.wordmark` el blog mostraba
+  // el dominio en versalitas («LUCIENSAEL.COM») en vez del logotipo de la marca.
+  const { wordmarkHtml, wordmarkStyle, WORDMARK_GEOMETRY, page } = await import('../api/_render.js');
+  const theme = { font_display: 'Cormorant Garamond', font_sans: 'JetBrains Mono' };
+
+  const sinDato = wordmarkHtml({ base_url: 'https://x.example.invalid' });
+  check('sin wordmark en el canal, el respaldo es texto declarado', !sinDato.includes('class="wm') && sinDato.includes('x.example.invalid'), sinDato);
+
+  const plano = { theme, wordmark: { parts: [{ text: 'Uno', font: 'display', color: 'text' }, { text: 'Dos', font: 'sans', color: 'accent', weight: 700 }] } };
+  const cssPlano = wordmarkStyle(plano);
+  check('sin ejes nuevos, la regla de cada parte es la de antes (sin cursiva, escala ni transformación)',
+    !/font-style|--wm-k|transform|margin-left/.test(cssPlano) && wordmarkHtml(plano).startsWith('<span class="wm wm-md"'), cssPlano);
+
+  const apilado = { theme, wordmark: { layout: 'stack', size: 'sm', parts: [
+    { text: 'Nombre', font: 'display', weight: 300, color: 'text', tracking: '0.12em' },
+    { text: 'Apellido', font: 'display', weight: 300, color: 'accent', tracking: '0.12em', style: 'italic' }] } };
+  const hApilado = wordmarkHtml(apilado, { size: 'md' });
+  check('layout stack y size del dato mandan sobre el tamaño del llamador', hApilado.includes('class="wm wm-sm wm-stack"'), hApilado);
+  check('la cursiva de una parte llega al CSS', /nth-child\(2\)\{[^}]*font-style:italic/.test(wordmarkStyle(apilado)), wordmarkStyle(apilado));
+
+  const cursor = { theme, wordmark: { parts: [
+    { text: '>', font: 'display', color: 'accent', blink: true, stretch: { x: 0.72, y: 1.45 } },
+    { text: 'MARCA', font: 'display', color: 'text' },
+    { text: 'sufijo', font: 'display', color: '#F2F0EC52', scale: 0.72, space_before: 0.18 }] } };
+  const hCursor = wordmarkHtml(cursor);
+  const cssCursor = wordmarkStyle(cursor);
+  check('una parte con blink lleva la clase de parpadeo', hCursor.includes('<span class="wm-blink">&gt;</span>'), hCursor);
+  check('el parpadeo se apaga con movimiento reducido', /prefers-reduced-motion:reduce\)\{\.wm>span\.wm-blink\{animation:none/.test(WORDMARK_GEOMETRY));
+  check('stretch, scale y space_before llegan al CSS',
+    cssCursor.includes('transform:scale(0.72,1.45)') && cssCursor.includes('--wm-k:0.72') && cssCursor.includes('margin-left:0.18em'), cssCursor);
+  check('un color hex de 8 dígitos (con alfa) se acepta', cssCursor.includes('#F2F0EC52'), cssCursor);
+
+  const hostil = { theme, wordmark: { layout: 'grid;}body{display:none', size: 'huge', parts: [
+    { text: 'X', scale: '1;}body{display:none', space_before: 9, stretch: { x: 'a', y: 50 }, style: 'oblique' }] } };
+  const cssHostil = wordmarkStyle(hostil);
+  check('un valor fuera de rango o no numérico se descarta, no se interpola',
+    !cssHostil.includes('display:none') && !/--wm-k|margin-left|transform|font-style/.test(cssHostil)
+      && wordmarkHtml(hostil).startsWith('<span class="wm wm-md"'), cssHostil);
+
+  const html = page({ config: { base_url: 'https://x.example.invalid', ...apilado }, title: 't', description: 'd', canonical: null, body: '' });
+  check('el blog no pide tipografías a Google: se sirven desde el propio dominio',
+    !html.includes('fonts.googleapis.com') && !html.includes('fonts.gstatic.com') && html.includes('/assets/site/fonts.css'));
+}
+
+console.log('\n── 23 · /api/blog-latest: la sección Writing de la portada sale de la misma fuente que /blog ──');
+{
+  scenario = 'happy';
+  const r = mockRes(); await blogLatest(mockReq(), r);
+  const posts = r._json?.posts ?? [];
+  check('status 200 y JSON', r.statusCode === 200 && r.headers['content-type']?.includes('application/json'), r.statusCode);
+  check('4 entradas por defecto', posts.length === 4, posts.length);
+  check('más reciente primero', posts.every((p, i) => i === 0 || String(posts[i - 1].published_iso ?? '') >= String(p.published_iso ?? '')),
+    JSON.stringify(posts.map((p) => p.published_iso)));
+  check('ninguna pieza descartada', !posts.some((p) => p.title === 'Pieza retirada por calidad'));
+  check('href bajo /blog/', posts.every((p) => p.href.startsWith('/blog/')));
+  check('misma caché que /blog y noindex', r.headers['cache-control'] === 's-maxage=300, stale-while-revalidate=86400' && r.headers['x-robots-tag'] === 'noindex');
+  const all = mockRes(); await blogLatest(mockReq({ limit: '99' }), all);
+  check('limit acotado a 8', (all._json?.posts ?? []).length <= 8);
+  const legacy = mockRes(); await blogLatest(mockReq({ limit: '8' }), legacy);
+  check('el artículo anterior al sistema entra en la lista', (legacy._json?.posts ?? []).some((p) => p.href === '/blog/the-intelligence-was-never-artificial'));
+  const prev = process.env.BRAND_ID; delete process.env.BRAND_ID;
+  const bad = mockRes(); await blogLatest(mockReq(), bad);
+  process.env.BRAND_ID = prev;
+  check('si el canal no resuelve: 503 sin caché (la portada se queda con su respaldo)', bad.statusCode === 503 && bad.headers['cache-control'] === 'no-store', bad.statusCode);
 }
 
 console.log(`\n═══ ${pass} pasaron · ${fail} fallaron ═══`);

@@ -46,12 +46,24 @@ export function absoluteUrl(baseUrl, path) {
   return `${base}${p}`;
 }
 
-// Geometria del wordmark, portada verbatim del vFINAL. Es EJE: no depende de ninguna
-// marca. Se exporta porque la sirven dos superficies —la cabecera del blog y las paginas
-// de aviso de /bim— y una sola definicion es lo que impide que se separen.
+// Geometria del wordmark. Es EJE: no depende de ninguna marca. Se exporta porque la sirven
+// dos superficies —la cabecera del blog y las paginas de aviso de /bim— y una sola
+// definicion es lo que impide que se separen.
+//
+// 2026-10-02 — el tamaño pasa del <span> al contenedor (`--wm-fs`) para que una parte pueda
+// declarar su ESCALA relativa (`scale` en el dato) sin romper la regla de origen: sin escala
+// declarada, todas las partes miden lo mismo, exactamente como antes. Se añaden dos ejes de
+// composicion que el dato puede pedir: `layout: 'stack'` (partes apiladas, una por linea) y
+// `blink` en una parte (parpadeo de cursor, que se apaga con movimiento reducido).
 export const WORDMARK_GEOMETRY = `.wm{display:inline-flex;align-items:baseline;gap:0;line-height:1}
-.wm-xl>span{font-size:54px}.wm-lg>span{font-size:36px}.wm-md>span{font-size:26px}
-.wm-sm>span{font-size:18px}.wm-xs>span{font-size:13px}.wm-xxs>span{font-size:10px}`;
+.wm>span{font-size:calc(var(--wm-fs,26px) * var(--wm-k,1))}
+.wm-xl{--wm-fs:54px}.wm-lg{--wm-fs:36px}.wm-md{--wm-fs:26px}
+.wm-sm{--wm-fs:18px}.wm-xs{--wm-fs:13px}.wm-xxs{--wm-fs:10px}
+.wm-stack{flex-direction:column;align-items:flex-start;line-height:.88}
+.wm-stack>span{display:block}
+@keyframes wm-blink{0%,49%{opacity:1}50%,100%{opacity:0}}
+.wm>span.wm-blink{display:inline-block;animation:wm-blink 1.1s step-end infinite}
+@media (prefers-reduced-motion:reduce){.wm>span.wm-blink{animation:none}}`;
 
 const STYLE = `
 /* Brand Identity System v1.0 de Lucien Sael — los MISMOS tokens que index.html, que
@@ -148,14 +160,24 @@ article p:last-child{margin-bottom:0}
 footer{margin-top:76px;border-top:1px solid var(--chalk-12);padding:30px 0 46px;font-size:12px;color:var(--chalk-42)}
 footer .wrap{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap}
 footer a{color:var(--chalk-72);text-decoration:none}
-@media(max-width:640px){.topbar nav{gap:9px 14px;font-size:11px}.hero{padding:48px 0 30px}}
+/* 2026-10-02 — cabecera del blog en el telefono (ui-ux-layer §18.3): dos filas, la marca
+   arriba y debajo pestañas de 48 px a todo el ancho. Medido antes: los enlaces median 13 px
+   de alto, un tercio del minimo tactil. Desde 720 px vuelve a ser una sola fila. */
+.mark{min-height:44px;align-items:center}
+.topbar nav a{display:inline-flex;align-items:center;justify-content:center;min-height:44px}
+.lede{font-family:var(--font-serif);font-style:italic}
+@media(max-width:719px){.topbar nav{width:100%;gap:0;font-size:12px;border-top:1px solid var(--chalk-06)}
+.topbar nav a{flex:1 1 0;min-height:48px}.hero{padding:48px 0 30px}}
 `;
 
 // Import UNICO con las cuatro familias, tal como lo trae el <head> del vFINAL.
 // Las cuatro tienen rol exclusivo en el sistema: Cormorant → eyebrows y portadas ·
 // EB Garamond → titulares y KPIs · DM Sans → cuerpo, UI y datos · Cinzel → SOLO
 // etiquetas y badges. Un wordmark que cae a la serif del sistema se ve casi bien y no lo es.
-const FONTS = 'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&family=JetBrains+Mono:ital,wght@0,300;0,400;0,700;1,300&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400;1,600&display=swap';
+// 2026-10-02 — servidas desde el propio dominio (ui-ux-layer §18.1), las MISMAS que la
+// portada: `scripts/vendor-site-fonts.mjs` las interioriza en `assets/site/`. Con la hoja de
+// Google, un bloqueador dejaba el logotipo en Georgia.
+const FONTS = '/assets/site/fonts.css';
 
 // `siteName` sale de `config.site_name` si la fila del canal lo trae; si no, del host
 // de la URL canónica. En ningún caso de un literal en el repo.
@@ -179,6 +201,14 @@ const WM_FONT_ROLES = { display: 'font_display', serif: 'font_serif', sans: 'fon
 const WM_COLOR_VARS = { text: '--chalk', text_2: '--chalk-72', text_3: '--chalk-42', accent: '--terra', warn: '--gold' };
 const WM_FALLBACK = { font_display: "'EB Garamond',serif", font_serif: "'Cormorant Garamond',serif", font_sans: "'DM Sans',sans-serif" };
 const WM_SIZES = new Set(['xxs', 'xs', 'sm', 'md', 'lg', 'xl']);
+const WM_LAYOUTS = new Set(['inline', 'stack']);
+
+// Un numero dentro de [min, max], o `null`. Lo que llega del dato no se interpola en el CSS
+// sin pasar por aqui: un valor fuera de rango se descarta, no se recorta en silencio.
+function boundedNumber(v, min, max) {
+  const n = Number(v);
+  return Number.isFinite(n) && n >= min && n <= max ? n : null;
+}
 
 // Una parte invalida se descarta y se anota; no se dibuja a medias ni tumba la pagina.
 export function wordmarkParts(config) {
@@ -198,6 +228,13 @@ export function wordmarkParts(config) {
       weight: Number.isFinite(Number(p?.weight)) ? Math.round(Number(p.weight)) : 400,
       color: hex ?? (WM_COLOR_VARS[p?.color] ? `var(${WM_COLOR_VARS[p.color]})` : `var(${WM_COLOR_VARS.text})`),
       tracking: /^-?[0-9.]{1,6}em$/.test(String(p?.tracking ?? '')) ? String(p.tracking) : '0',
+      // Ejes opcionales (2026-10-02). Sin ellos, la parte se dibuja exactamente como antes.
+      italic: p?.style === 'italic',
+      scale: boundedNumber(p?.scale, 0.3, 2),
+      spaceBefore: boundedNumber(p?.space_before, 0, 1),
+      blink: p?.blink === true,
+      stretchX: boundedNumber(p?.stretch?.x, 0.3, 3),
+      stretchY: boundedNumber(p?.stretch?.y, 0.3, 3),
     });
   }
   return parts.length ? parts : null;
@@ -209,9 +246,18 @@ export function wordmarkStyle(config) {
   const parts = wordmarkParts(config);
   if (!parts) return '';
   const vars = parts.map((p, i) => `--wm-c${i}:${p.color}`).join(';');
-  const rules = parts.map((p, i) =>
-    `.wm>span:nth-child(${i + 1}){font-family:${p.family};font-weight:${p.weight};`
-    + `letter-spacing:${p.tracking};color:var(--wm-c${i})}`).join('');
+  const rules = parts.map((p, i) => {
+    const extra = [
+      p.italic ? 'font-style:italic' : '',
+      p.scale !== null ? `--wm-k:${p.scale}` : '',
+      p.spaceBefore !== null ? `margin-left:${p.spaceBefore}em` : '',
+      (p.stretchX !== null || p.stretchY !== null)
+        ? `display:inline-block;transform:scale(${p.stretchX ?? 1},${p.stretchY ?? 1});transform-origin:center`
+        : '',
+    ].filter(Boolean).map((d) => `;${d}`).join('');
+    return `.wm>span:nth-child(${i + 1}){font-family:${p.family};font-weight:${p.weight};`
+      + `letter-spacing:${p.tracking};color:var(--wm-c${i})${extra}}`;
+  }).join('');
   return `.wm{${vars}}${rules}`;
 }
 
@@ -224,10 +270,14 @@ export function wordmarkHtml(config, { size = 'md' } = {}) {
   if (!parts) {
     return `<span style="font-family:var(--font-display);font-size:15px;letter-spacing:.12em;text-transform:uppercase">${escapeHtml(name)}</span>`;
   }
-  const cls = WM_SIZES.has(size) ? size : 'md';
+  // El tamaño y la disposicion pueden venir del dato (`wordmark.size`, `wordmark.layout`):
+  // un logotipo apilado necesita un cuerpo menor que uno en linea para ocupar lo mismo.
+  const wanted = config?.wordmark?.size;
+  const cls = WM_SIZES.has(wanted) ? wanted : (WM_SIZES.has(size) ? size : 'md');
+  const layout = WM_LAYOUTS.has(config?.wordmark?.layout) ? config.wordmark.layout : 'inline';
   // `aria-label` con el nombre: un lector de pantalla no debe deletrear las partes.
-  return `<span class="wm wm-${cls}" role="img" aria-label="${escapeHtml(name)}">`
-    + parts.map((p) => `<span>${escapeHtml(p.text)}</span>`).join('') + '</span>';
+  return `<span class="wm wm-${cls}${layout === 'stack' ? ' wm-stack' : ''}" role="img" aria-label="${escapeHtml(name)}">`
+    + parts.map((p) => `<span${p.blink ? ' class="wm-blink"' : ''}>${escapeHtml(p.text)}</span>`).join('') + '</span>';
 }
 
 export function siteNameOf(config) {
@@ -309,8 +359,7 @@ export function page({ config, title, description, canonical, ogType = 'website'
     `<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">`,
     `<link rel="icon" type="image/png" sizes="192x192" href="/favicon-192x192.png">`,
     `<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">`,
-    `<link rel="preconnect" href="https://fonts.googleapis.com">`,
-    `<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>`,
+    `<link rel="preload" href="/assets/site/fonts/cormorant-garamond-300-latin.woff2" as="font" type="font/woff2" crossorigin>`,
     `<link href="${FONTS}" rel="stylesheet">`,
     `<style>${STYLE}${wordmarkStyle(config)}</style>`,
     // `structuredData` admite un objeto o varios. Cada tipo va en su propio bloque en
