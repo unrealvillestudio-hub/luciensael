@@ -44,6 +44,8 @@ export default async function handler(req, res) {
         href: `${BLOG_PATH}/${p.slug}`,
         title: p.title,
         excerpt: p.excerpt,
+        // La imagen de la pieza, la misma que lleva su tarjeta en /blog. Null si no tiene.
+        image_url: p.image_url ?? null,
         topic: p.public_label,
         language: p.language,
         published_iso: p.published_iso,
