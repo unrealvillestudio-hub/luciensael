@@ -618,6 +618,8 @@ footer { border-top:2px solid var(--ember); background:var(--obsidian);
           <textarea class="cf-input" id="cf-msg" name="message" placeholder="What are you building?" aria-label="What are you building?" required maxlength="5000"></textarea>
           <!-- Trampa para robots: oculta para las personas y para los lectores de pantalla. -->
           <div class="cf-trap" aria-hidden="true"><label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+          <!-- Milisegundos entre la carga de la página y el envío; lo escribe el script. Sin JS queda vacío. -->
+          <input type="hidden" id="cf-form-ms" name="form_ms" value="">
           <button class="cf-btn" id="cf-send" type="submit">Send →</button>
           <p class="cf-status" id="cf-status" role="status" aria-live="polite"></p>
         </form>
@@ -892,6 +894,11 @@ fetch('/api/blog-latest', { headers: { Accept: 'application/json' } })
   const status = document.getElementById('cf-status');
   const send = document.getElementById('cf-send');
   const TO = 'iam@luciensael.com';
+  // Reloj del navegador desde la carga: nadie llena el formulario en menos de 3 s (ver api/contact.js).
+  const t0 = (window.performance && performance.now) ? performance.now() : Date.now();
+  const elapsed = () => String(Math.round(((window.performance && performance.now) ? performance.now() : Date.now()) - t0));
+  const msField = document.getElementById('cf-form-ms');
+  form.addEventListener('submit', () => { if (msField) msField.value = elapsed(); }, { capture: true });
   function say(text, cls) { status.className = 'cf-status' + (cls ? ' ' + cls : ''); status.textContent = text; }
   // El respaldo: el correo del visitante, con asunto y cuerpo ya escritos.
   function fallback(data) {
@@ -909,7 +916,7 @@ fetch('/api/blog-latest', { headers: { Accept: 'application/json' } })
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const fd = new FormData(form);
-    const data = { name: String(fd.get('name') || '').trim(), email: String(fd.get('email') || '').trim(), message: String(fd.get('message') || '').trim(), website: String(fd.get('website') || '') };
+    const data = { name: String(fd.get('name') || '').trim(), email: String(fd.get('email') || '').trim(), message: String(fd.get('message') || '').trim(), website: String(fd.get('website') || ''), form_ms: elapsed() };
     if (!data.name || !data.message || !data.email || !form.querySelector('#cf-email').checkValidity()) { say(STRINGS[lang]['cf-invalid']); return; }
     send.disabled = true; say(STRINGS[lang]['cf-sending']);
     try {

@@ -42,7 +42,7 @@ function check(name, cond, extra = '') {
   else { fail++; console.log(`  ✘ ${name} ${extra}`); }
 }
 
-const OK = { name: 'Ana Pérez', email: 'ana@example.com', message: 'First line\nSecond line' };
+const OK = { name: 'Ana Pérez', email: 'ana@example.com', message: 'First line\nSecond line', form_ms: '45000' };
 
 console.log('\n── 1 · Sin clave de Resend: 503 y el respaldo es el correo de Lucien ──');
 delete process.env.RESEND_API_KEY;
@@ -96,6 +96,40 @@ resendOk = false;
 ({ res } = await post(OK));
 check('Resend falla → 502 con respaldo', res.statusCode === 502 && res.body?.fallback === 'iam@luciensael.com', res.statusCode);
 resendOk = true;
+
+console.log('\n── 7 · Bots: descarte silencioso por tiempo ──');
+for (const [ms, why] of [['900', 'TOO_FAST'], ['12abc', 'BAD_TIMER'], [String(25 * 3600 * 1000), 'STALE_FORM']]) {
+  ({ res, mail } = await post({ ...OK, form_ms: ms }));
+  check(`form_ms=${ms} (${why}) → 200 y NO se envía`, res.statusCode === 200 && res.body?.ok === true && mail === null, res.statusCode);
+}
+({ res, mail } = await post({ ...OK, form_ms: '3000' }));
+check('form_ms en el umbral (3000) se envía', res.statusCode === 200 && mail !== null);
+
+console.log('\n── 8 · Bots: marca de sospecha (llega, marcado) ──');
+({ mail } = await post(OK));
+check('persona: asunto sin marca y sin aviso', mail && !mail.subject.includes('(posible bot)') && !mail.html.includes('Posible bot'), mail?.subject);
+const { form_ms: _omit, ...SIN_JS } = OK;
+({ res, mail } = await post(SIN_JS, { json: false }));
+check('sin form_ms: se envía igual (303 a ?sent=1)', res.statusCode === 303 && res.location === '/?sent=1#contact' && mail !== null);
+check('sin form_ms: asunto marcado', mail?.subject === 'luciensael.com (posible bot) — Ana Pérez', mail?.subject);
+check('sin form_ms: aviso con SIN_TIEMPO', mail?.html.includes('Posible bot') && mail?.html.includes('SIN_TIEMPO'));
+const casos = [
+  [{ message: 'Ana Pérez' }, 'MENSAJE_IGUAL_A_NOMBRE'],
+  [{ message: 'Hello, xkcdfgrtplmnoqw is ready' }, 'TEXTO_SIN_SENTIDO'],
+  [{ message: 'See https://seo.example now' }, 'ENLACE'],
+  [{ message: 'Visit www.seo.example' }, 'ENLACE'],
+  [{ message: 'I reviewed LucienSael.com and can rank it #1 on Google' }, 'NOMBRA_NUESTRO_DOMINIO'],
+];
+for (const [cambio, codigo] of casos) {
+  ({ mail } = await post({ ...OK, ...cambio }));
+  check(`${codigo}: llega marcado`, mail && mail.subject.includes('(posible bot)') && mail.html.includes(codigo), mail?.subject);
+}
+({ mail } = await post({ ...OK, message: 'I am building a world and would love to talk about narrative design.' }));
+check('mensaje normal en inglés: sin marca', mail && !mail.subject.includes('(posible bot)'));
+({ mail } = await post({ ...OK, message: 'Estoy construyendo una plataforma de investigación cinematográfica.' }));
+check('mensaje normal en español: sin marca', mail && !mail.subject.includes('(posible bot)'));
+({ mail } = await post({ ...OK, name: '<b>x</b>', message: 'https://x.example' }));
+check('el aviso no deja pasar HTML del visitante', mail && !mail.html.includes('<b>x</b>'));
 
 console.log(`\n═══ ${pass} pasaron · ${fail} fallaron ═══`);
 process.exit(fail ? 1 : 0);
